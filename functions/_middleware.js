@@ -1,4 +1,4 @@
-// functions/_middleware.js - Modified for 3D cube AMP template
+// functions/_middleware.js - Modified for 3D cube AMP template with space URL support
 
 export async function onRequest(context) {
   const { request, env, next } = context;
@@ -41,39 +41,72 @@ export async function onRequest(context) {
       .map(line => line.trim())
       .filter(line => line.length > 0);
     
-    // Create map to look up site names and URL formats
+    // Create map to look up site names and URL formats - improved to handle spaces
     sites.forEach(site => {
-      // URL Format: If site contains spaces, replace with hyphens
-      let urlFormat = site;
-      if (site.includes(' ')) {
-        urlFormat = site.replace(/\s+/g, ' ');
-      }
-      // Save to map for later reference
-      sitesMap.set(urlFormat.toLowerCase(), site);
-      // Also save version without hyphens, without spaces
-      sitesMap.set(site.toLowerCase().replace(/\s+/g, ''), site);
+      const originalSite = site;
+      
+      // Add original site name to the map
+      sitesMap.set(originalSite.toLowerCase(), originalSite);
+      
+      // Add version with spaces replaced by nothing
+      sitesMap.set(originalSite.toLowerCase().replace(/\s+/g, ''), originalSite);
+      
+      // Add version with spaces replaced by %20 (URL encoded space)
+      sitesMap.set(originalSite.toLowerCase().replace(/\s+/g, '%20'), originalSite);
+      
+      // Add version with spaces replaced by actual spaces
+      sitesMap.set(originalSite.toLowerCase(), originalSite);
     });
     
-    // Find out which site is being accessed
-    const pathSegments = url.pathname.split('/').filter(segment => segment);
-    const currentSite = pathSegments.length > 0 ? pathSegments[0].toLowerCase() : '';
+    // Find out which site is being accessed - improved to handle URL encoded spaces
+    let pathSegments = url.pathname.split('/').filter(segment => segment);
     
-    // Check if accessed site is in the map
-    const originalSiteName = sitesMap.get(currentSite) || 
-                             sitesMap.get(currentSite.replace(/-/g, '')) ||
-                             sitesMap.get(currentSite.replace(/-/g, ' '));
+    // Special handling for paths with spaces
+    // If there are no path segments but the raw pathname contains slashes and spaces
+    // this could be a URL with unencoded spaces like "/login juragan69"
+    if (url.pathname.includes(' ') && url.pathname.includes('/')) {
+      // Get everything after the last slash
+      const rawPath = url.pathname;
+      const lastSlashIndex = rawPath.lastIndexOf('/');
+      if (lastSlashIndex !== -1 && lastSlashIndex < rawPath.length - 1) {
+        const potentialSiteName = rawPath.substring(lastSlashIndex + 1);
+        pathSegments = [potentialSiteName]; // Override pathSegments with this value
+      }
+    }
+    
+    // Extract the current site from the path
+    let currentSite = '';
+    if (pathSegments.length > 0) {
+      currentSite = decodeURIComponent(pathSegments[0]).toLowerCase();
+    }
+    
+    // Check if accessed site is in the map - improved to handle different space formats
+    let originalSiteName = sitesMap.get(currentSite);
+    
+    // If not found directly, try alternative formats
+    if (!originalSiteName) {
+      // Try with spaces removed
+      originalSiteName = sitesMap.get(currentSite.replace(/\s+/g, ''));
+    }
+    
+    if (!originalSiteName) {
+      // Try with decoded URL (in case of %20)
+      try {
+        const decodedSite = decodeURIComponent(currentSite);
+        originalSiteName = sitesMap.get(decodedSite);
+      } catch (e) {
+        console.error('Error decoding URL:', e);
+      }
+    }
     
     if (originalSiteName || pathSegments.length === 0) {
       // Choose site based on path or use random if path is empty
       const siteToUse = originalSiteName || sites[Math.floor(Math.random() * sites.length)];
       
-      // Create correct URL format for canonical
+      // Untuk URL kanonik, gunakan nama situs asli tanpa perubahan
       let urlFormattedSite = siteToUse;
-      if (siteToUse.includes(' ')) {
-        urlFormattedSite = siteToUse.replace(/\s+/g, '-');
-      }
       
-      // Create canonical URL
+      // Create canonical URL - tanpa mengubah format
       const canonicalOrigin = 'https://simpeg.stikesmuwsb.ac.id/login/?jackpot='; // Replace with your actual domain
       const canonicalUrl = `${canonicalOrigin}${urlFormattedSite}`;
       
