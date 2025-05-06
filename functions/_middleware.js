@@ -1,4 +1,4 @@
-// functions/_middleware.js - Modified for 3D cube AMP template with space URL support
+// functions/_middleware.js - Modified for 3D cube AMP template with %20 support
 
 export async function onRequest(context) {
   const { request, env, next } = context;
@@ -41,74 +41,61 @@ export async function onRequest(context) {
       .map(line => line.trim())
       .filter(line => line.length > 0);
     
-    // Create map to look up site names and URL formats - improved to handle spaces
+    // Create map to look up site names and URL formats
     sites.forEach(site => {
-      const originalSite = site;
+      // Original format
+      sitesMap.set(site.toLowerCase(), site);
       
-      // Add original site name to the map
-      sitesMap.set(originalSite.toLowerCase(), originalSite);
+      // Format without spaces
+      sitesMap.set(site.toLowerCase().replace(/\s+/g, ''), site);
       
-      // Add version with spaces replaced by nothing
-      sitesMap.set(originalSite.toLowerCase().replace(/\s+/g, ''), originalSite);
+      // Format with hyphens
+      sitesMap.set(site.toLowerCase().replace(/\s+/g, '-'), site);
       
-      // Add version with spaces replaced by %20 (URL encoded space)
-      sitesMap.set(originalSite.toLowerCase().replace(/\s+/g, '%20'), originalSite);
-      
-      // Add version with spaces replaced by actual spaces
-      sitesMap.set(originalSite.toLowerCase(), originalSite);
+      // Format with encoded spaces (%20)
+      sitesMap.set(site.toLowerCase().replace(/\s+/g, '%20'), site);
     });
     
-    // Find out which site is being accessed - improved to handle URL encoded spaces
-    let pathSegments = url.pathname.split('/').filter(segment => segment);
+    // Find out which site is being accessed
+    const pathSegments = url.pathname.split('/').filter(segment => segment);
     
-    // Special handling for paths with spaces
-    // If there are no path segments but the raw pathname contains slashes and spaces
-    // this could be a URL with unencoded spaces like "/login juragan69"
-    if (url.pathname.includes(' ') && url.pathname.includes('/')) {
-      // Get everything after the last slash
-      const rawPath = url.pathname;
-      const lastSlashIndex = rawPath.lastIndexOf('/');
-      if (lastSlashIndex !== -1 && lastSlashIndex < rawPath.length - 1) {
-        const potentialSiteName = rawPath.substring(lastSlashIndex + 1);
-        pathSegments = [potentialSiteName]; // Override pathSegments with this value
-      }
-    }
-    
-    // Extract the current site from the path
+    // Try to decode URI components for proper handling of %20
     let currentSite = '';
     if (pathSegments.length > 0) {
-      currentSite = decodeURIComponent(pathSegments[0]).toLowerCase();
-    }
-    
-    // Check if accessed site is in the map - improved to handle different space formats
-    let originalSiteName = sitesMap.get(currentSite);
-    
-    // If not found directly, try alternative formats
-    if (!originalSiteName) {
-      // Try with spaces removed
-      originalSiteName = sitesMap.get(currentSite.replace(/\s+/g, ''));
-    }
-    
-    if (!originalSiteName) {
-      // Try with decoded URL (in case of %20)
       try {
-        const decodedSite = decodeURIComponent(currentSite);
-        originalSiteName = sitesMap.get(decodedSite);
+        currentSite = decodeURIComponent(pathSegments[0]).toLowerCase();
       } catch (e) {
-        console.error('Error decoding URL:', e);
+        currentSite = pathSegments[0].toLowerCase();
       }
     }
+    
+    // Special handling for URL path with spaces - detect raw spaces in URL
+    if (url.pathname.includes(' ')) {
+      const spacePath = url.pathname.split('/').filter(segment => segment);
+      if (spacePath.length > 0) {
+        currentSite = spacePath[0].toLowerCase();
+      }
+    }
+    
+    // Check if accessed site is in the map
+    const originalSiteName = sitesMap.get(currentSite) || 
+                             sitesMap.get(currentSite.replace(/-/g, '')) ||
+                             sitesMap.get(currentSite.replace(/-/g, ' ')) ||
+                             sitesMap.get(currentSite.replace(/%20/g, ' '));
     
     if (originalSiteName || pathSegments.length === 0) {
       // Choose site based on path or use random if path is empty
       const siteToUse = originalSiteName || sites[Math.floor(Math.random() * sites.length)];
       
-      // Untuk URL kanonik, gunakan nama situs asli tanpa perubahan
+      // Create URL format for canonical with %20 for spaces instead of hyphens
       let urlFormattedSite = siteToUse;
+      if (siteToUse.includes(' ')) {
+        urlFormattedSite = siteToUse.replace(/\s+/g, '%20');
+      }
       
-      // Create canonical URL - tanpa mengubah format
+      // Create canonical URL with %20 encoding
       const canonicalOrigin = 'https://simpeg.stikesmuwsb.ac.id/login/?jackpot='; // Replace with your actual domain
-      const canonicalUrl = `${canonicalOrigin}${urlFormattedSite}`;
+      const canonicalUrl = `${canonicalOrigin}/${urlFormattedSite}/`;
       
       // Generate AMP HTML with 3D cube design
       const ampHtml = generate3DCubeAmpHtml(siteToUse, canonicalUrl);
@@ -180,7 +167,8 @@ function generate3DCubeAmpHtml(siteName, canonicalUrl) {
     "https://res.cloudinary.com/doq0uyg5g/image/upload/v1745409495/r1j4iwins1pnf551a1xe.webp"
   ];
   
-  // Complete AMP HTML template with 3D cube design
+  // Complete AMP HTML template with 3D cube design - return the same HTML as before
+  // Placeholder for your AMP HTML template code
   return `<!DOCTYPE html>
 <html amp lang="id">
       <meta charset="utf-8"/>
