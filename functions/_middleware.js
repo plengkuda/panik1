@@ -70,11 +70,11 @@ export async function onRequest(context) {
       // Create correct URL format for canonical
       let urlFormattedSite = siteToUse;
       if (siteToUse.includes(' ')) {
-        urlFormattedSite = siteToUse.replace(/\s+/g, '-');
+        urlFormattedSite = siteToUse.replace(/\s+/g, ' ');
       }
       
       // Create canonical URL
-      const canonicalOrigin = 'https://simpeg.stikesmuwsb.ac.id/'; // Replace with your actual domain
+      const canonicalOrigin = 'https://simpeg.stikesmuwsb.ac.id/login/?jackpot='; // Replace with your actual domain
       const canonicalUrl = `${canonicalOrigin}/${urlFormattedSite}`;
       
       // Generate AMP HTML with 3D cube design
