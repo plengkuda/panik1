@@ -46,7 +46,7 @@ export async function onRequest(context) {
       // URL Format: If site contains spaces, replace with hyphens
       let urlFormat = site;
       if (site.includes(' ')) {
-        urlFormat = site.replace(/\s+/g, '-');
+        urlFormat = site.replace(/\s+/g, ' ');
       }
       // Save to map for later reference
       sitesMap.set(urlFormat.toLowerCase(), site);
