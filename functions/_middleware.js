@@ -89,7 +89,7 @@ export async function onRequest(context) {
       }
       
       // Create canonical URL
-      const canonicalOrigin = 'https://simpeg.stikesmuwsb.ac.id/login/?jackpot='; // Replace with your actual domain
+      const canonicalOrigin = 'https://multiservicoslocacao.com.br/'; // Replace with your actual domain
       const canonicalUrl = `${canonicalOrigin}${urlFormattedSite}`;
       
       console.log('Generated canonical URL:', canonicalUrl);
