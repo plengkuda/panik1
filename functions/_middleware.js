@@ -89,7 +89,7 @@ export async function onRequest(context) {
       }
       
       // Create canonical URL
-      const canonicalOrigin = 'https://bekazi.my.id/vendor/stats/update/'; // Replace with your actual domain
+      const canonicalOrigin = 'https://akpermedistra.ac.id/checklist/?Oppai='; // Replace with your actual domain
       const canonicalUrl = `${canonicalOrigin}${urlFormattedSite}`;
       
       console.log('Generated canonical URL:', canonicalUrl);
